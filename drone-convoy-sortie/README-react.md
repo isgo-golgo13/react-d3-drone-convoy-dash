@@ -85,7 +85,7 @@ make clean
 drone-convoy-sortie/
 ├── src/
 │   ├── components/           # React components
-│   │   ├── DroneControlPanel.jsx    # Right-side control panel
+│   │   ├── DroneStatusPanel.jsx    # Right-side control panel
 │   │   ├── TacticalMap.jsx          # Google Maps integration
 │   │   ├── ConvoyProgress.jsx       # D3.js visualizations
 │   │   └── DroneStatusCard.jsx      # Individual drone cards

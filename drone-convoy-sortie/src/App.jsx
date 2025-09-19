@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import TacticalMap from './components/TacticalMap';
-import DroneControlPanel from './components/DroneControlPanel';
+import DroneStatusPanel from './components/DroneStatusPanel';
 import ConvoyProgress from './components/ConvoyProgress';
 import { WAYPOINTS } from './config/constants';
 import './App.css';
