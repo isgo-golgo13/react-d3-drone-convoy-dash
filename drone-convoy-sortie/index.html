@@ -2,9 +2,9 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/drone-icon.svg" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Drone Convoy Attack Sortie</title>
+    <title>Drone Convoy Attack Run</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
       * {
@@ -25,7 +25,6 @@
         height: 100vh;
       }
 
-      /* Loading screen */
       .loading-container {
         position: fixed;
         top: 0;
@@ -52,7 +51,6 @@
         50% { opacity: 0.5; }
       }
 
-      /* Hide loading when app loads */
       body.loaded .loading-container {
         opacity: 0;
         pointer-events: none;
@@ -66,42 +64,38 @@
       </div>
     </div>
     
-    <!-- Google Maps Script - Load before app -->
+    <!-- Load Google Maps -->
     <script>
-      // Initialize callback for Google Maps
       function initMap() {
         window.googleMapsReady = true;
-        // Dispatch event to notify React that maps are ready
         window.dispatchEvent(new Event('google-maps-ready'));
-        // Remove loading screen
         document.body.classList.add('loaded');
       }
       
-      // Error handler
       function handleMapsError() {
         console.error('Failed to load Google Maps');
         document.getElementById('loading').innerHTML = '<div class="loading-text">ERROR: Failed to load tactical maps</div>';
       }
     </script>
     
-    <!-- Load Google Maps with API key from Vite env -->
+    <!-- Load Google Maps with API key -->
     <script type="module">
-      // Get the API key from Vite environment
       const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
       
       if (apiKey) {
         const script = document.createElement('script');
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=initMap`;
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=initMap&libraries=geometry`;
         script.async = true;
         script.defer = true;
         script.onerror = handleMapsError;
         document.head.appendChild(script);
       } else {
-        console.error('Google Maps API key not found in environment variables');
+        console.error('Google Maps API key not found');
         document.getElementById('loading').innerHTML = '<div class="loading-text">ERROR: API key not configured</div>';
       }
     </script>
     
+    <!-- Vite React App Entry Point -->
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
