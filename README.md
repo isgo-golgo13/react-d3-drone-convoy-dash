@@ -43,3 +43,24 @@ uuid = { version = "1.0", features = ["v4"] }
 - WebSocket connection to React frontend
 - Real-time video feed processing
 - GPS coordinate mapping to pixel coordinates
+
+
+
+## Creating the Front-End React Project
+
+```shell
+# 1. Create project
+npm create vite@latest drone-convoy-sortie -- --template react
+cd drone-convoy-sortie
+
+# 2. Install dependencies  
+npm install d3 lucide-react
+npm install -D tailwindcss postcss autoprefixer @types/d3
+
+# 3. Copy all provided code files
+# 4. Start development
+npm run dev  # http://localhost:5173
+
+# Or use Docker
+make quick-start  # http://localhost:8080
+```
