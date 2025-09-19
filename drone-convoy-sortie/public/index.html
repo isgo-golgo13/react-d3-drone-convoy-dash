@@ -2,87 +2,106 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="icon" type="image/svg+xml" href="/drone-icon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Drone Convoy Sortie</title>
-    
-    <!-- Google Maps API (Replace YOUR_API_KEY with actual key) -->
-    <script async defer 
-      src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=geometry,drawing">
-    </script>
-    
-    <!-- Preload military fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    
+    <title>Drone Convoy Attack Sortie</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-      /* Critical CSS for loading state */
-      body {
+      * {
         margin: 0;
-        background: #0f1419;
-        color: white;
-        font-family: 'JetBrains Mono', monospace;
+        padding: 0;
+        box-sizing: border-box;
       }
       
-      .loading-screen {
+      body {
+        font-family: 'JetBrains Mono', monospace;
+        background: #0a0a0a;
+        color: #00ff00;
+        overflow: hidden;
+      }
+
+      #root {
+        width: 100vw;
+        height: 100vh;
+      }
+
+      /* Loading screen */
+      .loading-container {
         position: fixed;
         top: 0;
         left: 0;
         width: 100%;
         height: 100%;
-        background: linear-gradient(135deg, #0f1419 0%, #1a202c 100%);
+        background: #0a0a0a;
         display: flex;
         align-items: center;
         justify-content: center;
         z-index: 9999;
+        transition: opacity 0.5s ease-out;
       }
-      
-      .loading-content {
-        text-align: center;
-        color: #4fd1c7;
+
+      .loading-text {
+        color: #00ff00;
+        font-size: 1.5rem;
+        font-family: 'JetBrains Mono', monospace;
+        animation: pulse 1.5s ease-in-out infinite;
       }
-      
-      .spinner {
-        width: 40px;
-        height: 40px;
-        border: 3px solid #1a202c;
-        border-top: 3px solid #4fd1c7;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-        margin: 0 auto 20px;
+
+      @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
       }
-      
-      @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
+
+      /* Hide loading when app loads */
+      body.loaded .loading-container {
+        opacity: 0;
+        pointer-events: none;
       }
     </style>
   </head>
   <body>
     <div id="root">
-      <!-- Loading screen -->
-      <div class="loading-screen">
-        <div class="loading-content">
-          <div class="spinner"></div>
-          <h2>DRONE CONVOY SORTIE</h2>
-          <p>Initializing tactical systems...</p>
-        </div>
+      <div class="loading-container" id="loading">
+        <div class="loading-text">INITIALIZING TACTICAL SYSTEMS...</div>
       </div>
     </div>
     
-    <script type="module" src="/src/main.jsx"></script>
-    
+    <!-- Google Maps Script - Load before app -->
     <script>
-      // Remove loading screen when React app loads
-      window.addEventListener('load', function() {
-        setTimeout(function() {
-          const loadingScreen = document.querySelector('.loading-screen');
-          if (loadingScreen) {
-            loadingScreen.style.opacity = '0';
-            setTimeout(() => loadingScreen.remove(), 300);
-          }
-        }, 1000);
-      });
+      // Initialize callback for Google Maps
+      function initMap() {
+        window.googleMapsReady = true;
+        // Dispatch event to notify React that maps are ready
+        window.dispatchEvent(new Event('google-maps-ready'));
+        // Remove loading screen
+        document.body.classList.add('loaded');
+      }
+      
+      // Error handler
+      function handleMapsError() {
+        console.error('Failed to load Google Maps');
+        document.getElementById('loading').innerHTML = '<div class="loading-text">ERROR: Failed to load tactical maps</div>';
+      }
     </script>
+    
+    <!-- Load Google Maps with API key from Vite env -->
+    <script type="module">
+      // Get the API key from Vite environment
+      const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+      
+      if (apiKey) {
+        const script = document.createElement('script');
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=initMap`;
+        script.async = true;
+        script.defer = true;
+        script.onerror = handleMapsError;
+        document.head.appendChild(script);
+      } else {
+        console.error('Google Maps API key not found in environment variables');
+        document.getElementById('loading').innerHTML = '<div class="loading-text">ERROR: API key not configured</div>';
+      }
+    </script>
+    
+    <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

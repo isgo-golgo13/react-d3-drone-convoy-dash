@@ -1,180 +1,232 @@
-import React from 'react';
-import { MapPin, Satellite, Map as MapIcon, Layers } from 'lucide-react';
-import { useGoogleMaps } from '../hooks/useGoogleMaps.js';
+import React, { useEffect, useRef, useState } from 'react';
 
-/**
- * Tactical map component with Google Maps integration
- * @param {Object} props - Component props
- * @param {Array} props.drones - Array of drone objects
- * @param {Function} props.onDroneClick - Drone click callback
- * @returns {JSX.Element}
- */
-const TacticalMap = ({ drones = [], onDroneClick = () => {} }) => {
-  const {
-    mapRef,
-    isMapLoaded,
-    mapError,
-    focusOnDrone,
-    fitMapToWaypoints,
-    changeMapType
-  } = useGoogleMaps(drones, onDroneClick);
+const TacticalMap = ({ drones, waypoints }) => {
+  const mapRef = useRef(null);
+  const mapInstanceRef = useRef(null);
+  const droneMarkersRef = useRef({});
+  const [googleLoaded, setGoogleLoaded] = useState(false);
 
-  const renderMapControls = () => (
-    <div className="absolute top-4 left-4 z-10 space-y-2">
-      <div className="bg-military-dark/90 backdrop-blur-sm rounded-lg p-2 border border-military-accent/30">
-        <div className="flex gap-1">
-          <button
-            onClick={() => changeMapType('hybrid')}
-            className="btn-tactical p-2 rounded text-xs flex items-center gap-1 text-military-accent"
-            title="Satellite View"
-          >
-            <Satellite className="w-3 h-3" />
-          </button>
-          <button
-            onClick={() => changeMapType('roadmap')}
-            className="btn-tactical p-2 rounded text-xs flex items-center gap-1 text-military-accent"
-            title="Road Map"
-          >
-            <MapIcon className="w-3 h-3" />
-          </button>
-          <button
-            onClick={() => changeMapType('terrain')}
-            className="btn-tactical p-2 rounded text-xs flex items-center gap-1 text-military-accent"
-            title="Terrain"
-          >
-            <Layers className="w-3 h-3" />
-          </button>
-          <button
-            onClick={fitMapToWaypoints}
-            className="btn-tactical p-2 rounded text-xs flex items-center gap-1 text-military-accent"
-            title="Fit to Waypoints"
-          >
-            <MapPin className="w-3 h-3" />
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+  // Load Google Maps Script
+  useEffect(() => {
+    // Check if already loaded
+    if (window.google && window.google.maps) {
+      setGoogleLoaded(true);
+      return;
+    }
 
-  const renderMapStatus = () => (
-    <div className="absolute bottom-4 left-4 z-10">
-      <div className="bg-military-dark/90 backdrop-blur-sm rounded-lg p-3 border border-military-accent/30">
-        <div className="text-xs space-y-1">
-          <div className="flex justify-between gap-4">
-            <span className="text-gray-300">Map Status:</span>
-            <span className={isMapLoaded ? 'text-green-400' : 'text-yellow-400'}>
-              {isMapLoaded ? 'LOADED' : 'LOADING...'}
-            </span>
-          </div>
-          <div className="flex justify-between gap-4">
-            <span className="text-gray-300">AOR:</span>
-            <span className="text-cyan-400">AFGHANISTAN</span>
-          </div>
-          <div className="flex justify-between gap-4">
-            <span className="text-gray-300">Waypoints:</span>
-            <span className="text-cyan-400">12</span>
-          </div>
-          <div className="flex justify-between gap-4">
-            <span className="text-gray-300">Assets:</span>
-            <span className="text-cyan-400">{drones.length}</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+    // Create and load script
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`;
+    script.async = true;
+    script.defer = true;
+    script.onload = () => {
+      console.log('Google Maps loaded successfully');
+      setGoogleLoaded(true);
+    };
+    script.onerror = () => {
+      console.error('Failed to load Google Maps');
+    };
+    
+    document.head.appendChild(script);
 
-  const renderDroneCount = () => (
-    <div className="absolute top-4 right-4 z-10">
-      <div className="bg-military-dark/90 backdrop-blur-sm rounded-lg p-3 border border-military-accent/30">
-        <div className="text-xs space-y-1">
-          <div className="text-military-accent font-bold">ACTIVE ASSETS</div>
-          <div className="flex justify-between gap-4">
-            <span className="text-green-400">ONLINE:</span>
-            <span className="font-mono">{drones.filter(d => d.status === 'online').length}</span>
-          </div>
-          <div className="flex justify-between gap-4">
-            <span className="text-yellow-400">WARNING:</span>
-            <span className="font-mono">{drones.filter(d => d.status === 'warning').length}</span>
-          </div>
-          <div className="flex justify-between gap-4">
-            <span className="text-red-400">OFFLINE:</span>
-            <span className="font-mono">{drones.filter(d => d.status === 'offline').length}</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+    // Cleanup
+    return () => {
+      const existingScript = document.querySelector(`script[src*="maps.googleapis.com"]`);
+      if (existingScript && !window.google) {
+        existingScript.remove();
+      }
+    };
+  }, []);
 
-  if (mapError) {
+  // Initialize map once Google Maps is loaded
+  useEffect(() => {
+    if (!googleLoaded || !mapRef.current || mapInstanceRef.current) return;
+
+    console.log('Initializing Google Map...');
+    
+    const map = new window.google.maps.Map(mapRef.current, {
+      center: { lat: 34.5553, lng: 69.2075 }, // Afghanistan center
+      zoom: 12,
+      mapTypeId: 'satellite',
+      styles: [
+        {
+          featureType: "all",
+          elementType: "labels.text.fill",
+          stylers: [{ color: "#00ff00" }]
+        },
+        {
+          featureType: "all",
+          elementType: "labels.text.stroke",
+          stylers: [{ color: "#000000" }, { lightness: 13 }]
+        },
+        {
+          featureType: "water",
+          elementType: "geometry",
+          stylers: [{ color: "#0a4f3c" }]
+        },
+        {
+          featureType: "landscape",
+          elementType: "geometry",
+          stylers: [{ color: "#1a1a1a" }]
+        }
+      ],
+      mapTypeControl: true,
+      streetViewControl: false,
+      fullscreenControl: true,
+      zoomControl: true,
+      zoomControlOptions: {
+        position: window.google.maps.ControlPosition.RIGHT_CENTER
+      },
+      mapTypeControlOptions: {
+        position: window.google.maps.ControlPosition.TOP_LEFT
+      }
+    });
+
+    mapInstanceRef.current = map;
+
+    // Add waypoint markers
+    waypoints.forEach((waypoint, index) => {
+      const marker = new window.google.maps.Marker({
+        position: { lat: waypoint.lat, lng: waypoint.lng },
+        map: map,
+        title: waypoint.name,
+        icon: {
+          path: window.google.maps.SymbolPath.CIRCLE,
+          scale: 10,
+          fillColor: '#ff6b35',
+          fillOpacity: 0.9,
+          strokeColor: '#ffffff',
+          strokeWeight: 2,
+          anchor: new window.google.maps.Point(0, 0)
+        },
+        zIndex: 1
+      });
+
+      // Add waypoint label
+      const infoWindow = new window.google.maps.InfoWindow({
+        content: `
+          <div style="
+            background: rgba(0,0,0,0.9); 
+            color: #00ff00; 
+            padding: 8px; 
+            border: 1px solid #00ff00;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            min-width: 150px;
+          ">
+            <strong>${waypoint.name}</strong><br/>
+            WP-${String(index + 1).padStart(2, '0')}<br/>
+            ${waypoint.lat.toFixed(4)}, ${waypoint.lng.toFixed(4)}
+          </div>
+        `,
+        disableAutoPan: true
+      });
+
+      marker.addListener('click', () => {
+        infoWindow.open(map, marker);
+      });
+    });
+
+  }, [googleLoaded, waypoints]);
+
+  // Update drone positions
+  useEffect(() => {
+    if (!mapInstanceRef.current || !googleLoaded) return;
+
+    drones.forEach(drone => {
+      // Calculate drone position based on waypoint progress
+      const currentWP = waypoints[drone.currentWaypoint];
+      const nextWP = waypoints[Math.min(drone.currentWaypoint + 1, waypoints.length - 1)];
+      
+      if (currentWP && nextWP) {
+        const lat = currentWP.lat + (nextWP.lat - currentWP.lat) * drone.progress;
+        const lng = currentWP.lng + (nextWP.lng - currentWP.lng) * drone.progress;
+
+        // Update or create drone marker
+        if (droneMarkersRef.current[drone.id]) {
+          droneMarkersRef.current[drone.id].setPosition({ lat, lng });
+          droneMarkersRef.current[drone.id].setIcon({
+            path: 'M0,-20 L-10,10 L0,5 L10,10 Z',
+            scale: 1.5,
+            fillColor: drone.status === 'online' ? '#00ff00' : '#ff0000',
+            fillOpacity: 0.9,
+            strokeColor: '#000000',
+            strokeWeight: 1,
+            rotation: 45,
+            anchor: new window.google.maps.Point(0, 0)
+          });
+        } else {
+          const marker = new window.google.maps.Marker({
+            position: { lat, lng },
+            map: mapInstanceRef.current,
+            title: drone.callsign,
+            icon: {
+              path: 'M0,-20 L-10,10 L0,5 L10,10 Z',
+              scale: 1.5,
+              fillColor: drone.status === 'online' ? '#00ff00' : '#ff0000',
+              fillOpacity: 0.9,
+              strokeColor: '#000000',
+              strokeWeight: 1,
+              rotation: 45,
+              anchor: new window.google.maps.Point(0, 0)
+            },
+            zIndex: 100
+          });
+
+          // Add click handler for drone info
+          marker.addListener('click', () => {
+            const infoWindow = new window.google.maps.InfoWindow({
+              content: `
+                <div style="
+                  background: rgba(0,0,0,0.95); 
+                  color: #00ff00; 
+                  padding: 10px; 
+                  border: 1px solid #00ff00;
+                  font-family: 'JetBrains Mono', monospace;
+                  font-size: 11px;
+                  min-width: 200px;
+                ">
+                  <strong style="color: #ff6b35">${drone.callsign}</strong><br/>
+                  <hr style="border-color: #00ff00; opacity: 0.3; margin: 5px 0;"/>
+                  Status: <span style="color: ${drone.status === 'online' ? '#00ff00' : '#ff0000'}">${drone.status.toUpperCase()}</span><br/>
+                  Battery: ${drone.battery.toFixed(0)}%<br/>
+                  Altitude: ${drone.altitude.toFixed(0)}m<br/>
+                  Speed: ${drone.speed.toFixed(0)} km/h<br/>
+                  Position: ${lat.toFixed(4)}, ${lng.toFixed(4)}<br/>
+                  Waypoint: ${drone.currentWaypoint + 1}/${waypoints.length}
+                </div>
+              `
+            });
+            infoWindow.open(mapInstanceRef.current, marker);
+          });
+
+          droneMarkersRef.current[drone.id] = marker;
+        }
+
+        // Update drone's lat/lng
+        drone.lat = lat;
+        drone.lng = lng;
+      }
+    });
+  }, [drones, waypoints, googleLoaded]);
+
+  if (!googleLoaded) {
     return (
-      <div className="w-full h-full bg-military-medium rounded-lg border border-red-400/50 flex items-center justify-center">
-        <div className="text-center p-8">
-          <MapIcon className="w-16 h-16 text-red-400 mx-auto mb-4" />
-          <h3 className="text-lg font-bold text-red-400 mb-2">MAP ERROR</h3>
-          <p className="text-sm text-gray-300 mb-4">{mapError}</p>
-          <div className="text-xs text-gray-400 bg-military-dark p-3 rounded font-mono">
-            Google Maps API key required for live map functionality.
-            <br />
-            Current view shows tactical overlay simulation.
-          </div>
+      <div className="w-full h-full bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
+          <p className="text-green-500 font-mono">Loading Tactical Map...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="relative w-full h-full bg-military-medium rounded-lg overflow-hidden border border-military-accent/30">
-      {/* Map Container */}
-      <div 
-        ref={mapRef}
-        className="w-full h-full map-container"
-        style={{ minHeight: '500px' }}
-      >
-        {!isMapLoaded && (
-          <div className="flex items-center justify-center h-full bg-military-medium">
-            <div className="text-center">
-              <div className="animate-spin w-8 h-8 border-2 border-military-accent border-t-transparent rounded-full mx-auto mb-4"></div>
-              <div className="text-military-accent font-bold">INITIALIZING TACTICAL MAP</div>
-              <div className="text-sm text-gray-300 mt-2">Afghanistan AOR • 12 Waypoints</div>
-            </div>
-          </div>
-        )}
+    <div className="relative w-full h-full">
+      <div ref={mapRef} className="w-full h-full" />
+      <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-black/80 text-green-500 px-4 py-2 rounded-lg font-mono text-sm border border-green-500/50">
+        TACTICAL OPS - AFGHANISTAN THEATER
       </div>
-
-      {/* Map Overlay Controls */}
-      {isMapLoaded && (
-        <>
-          {renderMapControls()}
-          {renderMapStatus()}
-          {renderDroneCount()}
-        </>
-      )}
-
-      {/* Fallback Tactical Display */}
-      {!window.google && (
-        <div className="absolute inset-0 bg-military-dark/95 flex items-center justify-center">
-          <div className="text-center p-8">
-            <Satellite className="w-16 h-16 text-military-accent mx-auto mb-4" />
-            <h3 className="text-lg font-bold text-military-accent mb-2">TACTICAL MAP SIMULATION</h3>
-            <p className="text-sm text-gray-300 mb-4">
-              Google Maps API integration ready for deployment
-            </p>
-            <div className="grid grid-cols-2 gap-4 text-xs">
-              <div className="bg-military-medium p-3 rounded">
-                <div className="text-military-accent font-bold">WAYPOINTS</div>
-                <div className="text-gray-300">12 Strategic Points</div>
-                <div className="text-gray-300">Afghanistan AOR</div>
-              </div>
-              <div className="bg-military-medium p-3 rounded">
-                <div className="text-military-accent font-bold">ASSETS</div>
-                <div className="text-green-400">{drones.filter(d => d.status === 'online').length} Online</div>
-                <div className="text-yellow-400">{drones.filter(d => d.status === 'warning').length} Warning</div>
-                <div className="text-red-400">{drones.filter(d => d.status === 'offline').length} Offline</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
