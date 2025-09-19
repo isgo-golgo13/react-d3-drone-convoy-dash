@@ -2,6 +2,10 @@
 Drone Attack Tracking Convoy Geo-Grid Service using React.js with D3.j, Google Maps for React, OpenCV Tracking API and Rust. 
 
 
+![drone-convoy-screen](docs/react-d3-convoy-screen.png)
+
+
+
 
 ## Drone Attack Convoy Dash Service Overview
 
@@ -55,7 +59,7 @@ cd drone-convoy-sortie
 
 # 2. Install dependencies  
 npm install d3 lucide-react
-npm install -D tailwindcss postcss autoprefixer @types/d3
+npm install -D postcss autoprefixer @types/d3
 
 # 3. Copy all provided code files
 # 4. Start development
