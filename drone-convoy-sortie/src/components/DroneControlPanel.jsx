@@ -28,7 +28,7 @@ import DroneStatusCard from './DroneStatusCard.jsx';
  * @param {Function} props.onSpeedChange - Speed change callback
  * @returns {JSX.Element}
  */
-const DroneStatusPanel = ({
+const DroneControlPanel = ({
   drones = [],
   isSimulating = false,
   selectedDrone = null,
@@ -339,4 +339,4 @@ const DroneStatusPanel = ({
   );
 };
 
-export default DroneStatusPanel;
+export default DroneControlPanel;

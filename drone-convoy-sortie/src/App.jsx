@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import TacticalMap from './components/TacticalMap';
-import DroneStatusPanel from './components/DroneStatusPanel';
+import DroneControlPanel from './components/DroneControlPanel';
 import ConvoyProgress from './components/ConvoyProgress';
-import { WAYPOINTS } from './config/constants';
+import { WAYPOINTS } from './data/seedData';
 import './App.css';
 
 // Initialize 12 military attack drones
